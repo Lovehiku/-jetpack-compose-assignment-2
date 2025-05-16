@@ -8,28 +8,43 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import retrofit2.HttpException
 import java.io.IOException
+import android.util.Log
+import kotlinx.coroutines.flow.first
 
 class TodoRepository(
     private val api: TodoApi,
     private val dao: TodoDao
 ) {
-    fun getTodos(): Flow<List<Todo>> = flow {
-        // Emit cached data first
-        emitAll(dao.getAllTodos())
 
+
+    fun getTodos(): Flow<List<Todo>> = flow {
+        // First emit cached data
+        val cachedTodos = dao.getAllTodos().first()
+        Log.d("TodoRepository", "Emitting cached data: ${cachedTodos.size} items")
+        emit(cachedTodos)
         try {
-            // Fetch fresh data from API
+            Log.d("TodoRepository", "Fetching from API...")
             val response = api.getTodos()
             if (response.isSuccessful) {
-                response.body()?.let { todos ->
-                    // Update cache
-                    dao.insertTodos(todos)
+                val apiTodos = response.body()
+                Log.d("TodoRepository", "API response size: ${apiTodos?.size}")
+                apiTodos?.let {
+                    dao.deleteAllTodos()
+                    dao.insertTodos(it)
+                    Log.d("TodoRepository", "Inserted todos from API into DB")
+                    // Emit the new data from DB
+                    val updatedTodos = dao.getAllTodos().first()
+                    Log.d("TodoRepository", "Emitting updated data: ${updatedTodos.size} items")
+                    emit(updatedTodos)
                 }
+            } else {
+                Log.e("TodoRepository", "API error: ${response.code()} ${response.message()}")
+                throw HttpException(response)
             }
         } catch (e: IOException) {
-            // Network error, using cached data
+            Log.e("TodoRepository", "Network error: ${e.localizedMessage}")
         } catch (e: HttpException) {
-            // API error, using cached data
+            Log.e("TodoRepository", "HTTP error: ${e.localizedMessage}")
         }
     }
 

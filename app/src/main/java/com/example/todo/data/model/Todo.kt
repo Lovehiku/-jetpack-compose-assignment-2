@@ -5,8 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "todos")
 data class Todo(
-    @PrimaryKey
-    val id: Int,
+    @PrimaryKey val id: Int,
     val userId: Int,
     val title: String,
     val completed: Boolean

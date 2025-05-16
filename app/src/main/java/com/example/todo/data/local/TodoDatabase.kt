@@ -27,32 +27,13 @@ abstract class TodoDatabase : RoomDatabase() {
                 ).addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
-                        // Fetch initial data when database is created
-                        CoroutineScope(Dispatchers.IO).launch {
-                            val database = INSTANCE
-                            database?.let { db ->
-                                try {
-                                    val retrofit = retrofit2.Retrofit.Builder()
-                                        .baseUrl("https://jsonplaceholder.typicode.com/")
-                                        .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
-                                        .build()
-                                    val api = retrofit.create(com.example.todo.data.remote.TodoApi::class.java)
-                                    val response = api.getTodos()
-                                    if (response.isSuccessful) {
-                                        response.body()?.let { todos ->
-                                            db.todoDao().insertTodos(todos)
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    // Handle error silently as this is initial data fetch
-                                }
-                            }
-                        }
+                        // Removed sample data insertion block
                     }
                 }).build().also { database ->
                     INSTANCE = database
                 }
                 INSTANCE!!
+            }
         }
     }
-}}
+}
